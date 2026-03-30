@@ -147,6 +147,44 @@ export default async function CampaignDetailPage({
         </CardContent>
       </Card>
 
+      {/* Add via API */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Add Contacts via API</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            You can also add contacts programmatically using the{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+              POST /api/contacts
+            </code>{' '}
+            endpoint. This is useful when integrating with badge scanners, CRMs,
+            or other event tools.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <pre className="overflow-x-auto rounded-md bg-muted p-4 text-xs leading-relaxed">
+            <code>{`curl -X POST ${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-app.vercel.app'}/api/contacts \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "campaignId": ${id},
+    "contact": {
+      "email": "alex.wong@newco.dev",
+      "firstName": "Alex",
+      "lastName": "Wong",
+      "companyName": "NewCo",
+      "context": "Visited booth on Day 2 - asked about Kubernetes integration"
+    }
+  }'`}</code>
+          </pre>
+          <p className="text-xs text-muted-foreground">
+            Required fields: <code className="rounded bg-muted px-1 py-0.5">email</code>,{' '}
+            <code className="rounded bg-muted px-1 py-0.5">firstName</code>,{' '}
+            <code className="rounded bg-muted px-1 py-0.5">companyName</code>.
+            Optional: <code className="rounded bg-muted px-1 py-0.5">lastName</code>,{' '}
+            <code className="rounded bg-muted px-1 py-0.5">context</code> (mapped to notes).
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Process */}
       {campaign.counts.pending > 0 && (
         <ProcessButton

@@ -82,7 +82,9 @@ Click **Upload 5 contacts** to import them.
 
 ### Step 3: Add Contacts via API
 
-You can also add contacts programmatically using the `POST /api/contacts` endpoint. This is useful when integrating with badge scanners, CRMs, or other event tools.
+You can also add contacts programmatically using the `POST /api/contacts` endpoint. This is useful when integrating with badge scanners, CRMs, or other event tools. The campaign detail page includes a ready-to-use curl example with your campaign ID pre-filled:
+
+![API contacts section on campaign page](public/screenshots/07-api-contacts.png)
 
 ```bash
 curl -X POST https://your-app.vercel.app/api/contacts \
