@@ -10,7 +10,7 @@ export async function getCampaigns() {
   return db.select().from(campaigns).orderBy(desc(campaigns.updatedAt));
 }
 
-export async function getCampaignById(id: string) {
+export async function getCampaignById(id: number) {
   const [campaign] = await db
     .select()
     .from(campaigns)
@@ -19,7 +19,7 @@ export async function getCampaignById(id: string) {
   return campaign ?? null;
 }
 
-export async function getCampaignWithCounts(id: string) {
+export async function getCampaignWithCounts(id: number) {
   const campaign = await getCampaignById(id);
   if (!campaign) return null;
 
@@ -66,7 +66,7 @@ export async function createCampaign(
 }
 
 export async function updateCampaign(
-  id: string,
+  id: number,
   data: Partial<CampaignInsert>,
 ) {
   const [campaign] = await db
@@ -80,7 +80,7 @@ export async function updateCampaign(
   return campaign ?? null;
 }
 
-export async function deleteCampaign(id: string) {
+export async function deleteCampaign(id: number) {
   await db.delete(contacts).where(eq(contacts.campaignId, id));
   await db.delete(campaigns).where(eq(campaigns.id, id));
   revalidatePath('/campaigns');

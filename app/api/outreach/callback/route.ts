@@ -46,12 +46,15 @@ export async function GET(request: NextRequest) {
       .where(eq(oauthTokens.provider, 'outreach'))
       .limit(1);
 
+    const scope = data.scope ?? null;
+
     if (existing.length > 0) {
       await db
         .update(oauthTokens)
         .set({
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
+          scope,
           expiresAt: new Date(Date.now() + data.expires_in * 1000),
         })
         .where(eq(oauthTokens.provider, 'outreach'));
@@ -60,6 +63,7 @@ export async function GET(request: NextRequest) {
         provider: 'outreach',
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
+        scope,
         expiresAt: new Date(Date.now() + data.expires_in * 1000),
       });
     }

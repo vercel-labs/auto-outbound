@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 
 interface ProcessButtonProps {
-  campaignId: string;
+  campaignId: number;
   pendingCount: number;
   processAction: () => Promise<void>;
 }

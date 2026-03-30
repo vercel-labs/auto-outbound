@@ -1,7 +1,6 @@
 import {
   pgTable,
   pgEnum,
-  uuid,
   text,
   timestamp,
   integer,
@@ -51,7 +50,7 @@ export interface PeopleResearch {
 // =============================================================================
 
 export const campaigns = pgTable('campaigns', {
-  id: uuid('id').defaultRandom().primaryKey(),
+  id: serial('id').primaryKey(),
   name: text('name').notNull(),
   description: text('description'),
   status: campaignStatus('status').default('draft').notNull(),
@@ -80,8 +79,8 @@ export type CampaignInsert = typeof campaigns.$inferInsert;
 // =============================================================================
 
 export const contacts = pgTable('contacts', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  campaignId: uuid('campaign_id')
+  id: serial('id').primaryKey(),
+  campaignId: integer('campaign_id')
     .references(() => campaigns.id, { onDelete: 'cascade' })
     .notNull(),
   status: contactStatus('status').default('pending').notNull(),
@@ -116,10 +115,11 @@ export type ContactInsert = typeof contacts.$inferInsert;
 // =============================================================================
 
 export const oauthTokens = pgTable('oauth_tokens', {
-  id: uuid('id').defaultRandom().primaryKey(),
+  id: serial('id').primaryKey(),
   provider: text('provider').notNull().unique(),
   accessToken: text('access_token').notNull(),
   refreshToken: text('refresh_token').notNull(),
+  scope: text('scope'),
   expiresAt: timestamp('expires_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })

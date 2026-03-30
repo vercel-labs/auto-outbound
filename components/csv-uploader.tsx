@@ -9,7 +9,7 @@ import { parseCsv, type CsvContact } from '@/lib/csv';
 import { addContacts } from '@/services/contacts';
 
 interface CsvUploaderProps {
-  campaignId: string;
+  campaignId: number;
 }
 
 export function CsvUploader({ campaignId }: CsvUploaderProps) {

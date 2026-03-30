@@ -13,7 +13,7 @@ export default async function CampaignsPage() {
   const campaignList = await getCampaigns();
 
   // Get contact counts for each campaign
-  const countsMap: Record<string, number> = {};
+  const countsMap: Record<number, number> = {};
   if (campaignList.length > 0) {
     const rows = await db
       .select({

@@ -24,7 +24,10 @@ export default async function CampaignDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const id = parseInt(rawId, 10);
+  if (isNaN(id)) notFound();
+
   const campaign = await getCampaignWithCounts(id);
 
   if (!campaign) {

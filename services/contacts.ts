@@ -24,7 +24,7 @@ import {
   setProspectCustomFields,
 } from '@/lib/outreach/prospects';
 
-export async function getContacts(campaignId: string) {
+export async function getContacts(campaignId: number) {
   return db
     .select()
     .from(contacts)
@@ -33,7 +33,7 @@ export async function getContacts(campaignId: string) {
 }
 
 export async function addContacts(
-  campaignId: string,
+  campaignId: number,
   contactsData: Omit<ContactInsert, 'campaignId'>[],
 ) {
   if (contactsData.length === 0) return [];
@@ -45,7 +45,7 @@ export async function addContacts(
 }
 
 async function updateContactStatus(
-  contactId: string,
+  contactId: number,
   status: Contact['status'],
   extra?: Partial<ContactInsert>,
 ) {
@@ -55,7 +55,7 @@ async function updateContactStatus(
     .where(eq(contacts.id, contactId));
 }
 
-export async function processContact(contactId: string) {
+export async function processContact(contactId: number) {
   const [contact] = await db
     .select()
     .from(contacts)
@@ -183,7 +183,7 @@ export async function processContact(contactId: string) {
   revalidatePath(`/campaigns/${contact.campaignId}`);
 }
 
-export async function processAllContacts(campaignId: string) {
+export async function processAllContacts(campaignId: number) {
   const pendingContacts = await db
     .select()
     .from(contacts)
@@ -191,7 +191,7 @@ export async function processAllContacts(campaignId: string) {
 
   const pending = pendingContacts.filter((c) => c.status === 'pending');
 
-  const results: { id: string; success: boolean; error?: string }[] = [];
+  const results: { id: number; success: boolean; error?: string }[] = [];
 
   for (const contact of pending) {
     try {
