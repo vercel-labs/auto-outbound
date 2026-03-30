@@ -2,7 +2,7 @@
 
 AI-powered outbound email generation with Exa research context and Outreach integration. One-click deploy to Vercel.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-org%2Fos-auto-outbound&env=DATABASE_URL,AI_GATEWAY_API_KEY,EXA_API_KEY&envDescription=Required%20environment%20variables&envLink=https%3A%2F%2Fgithub.com%2Fyour-org%2Fos-auto-outbound%23environment-variables)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fauto-outbound&env=DATABASE_URL,AI_GATEWAY_API_KEY,EXA_API_KEY&envDescription=Required%20environment%20variables&envLink=https%3A%2F%2Fgithub.com%2Fvercel-labs%2Fauto-outbound%23environment-variables)
 
 ## What it does
 
