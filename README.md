@@ -192,6 +192,67 @@ Four tables in Neon Postgres:
 - **OpenAI via Vercel AI SDK** (`lib/email/`) — GPT-4o for email generation, GPT-4o-mini for research summarization
 - **Outreach** (`lib/outreach/`) — OAuth2 integration for prospect management and sequence enrollment
 
+## Coding Conventions
+
+These conventions are how we build in this repo. Follow them when adding features or fixing bugs.
+
+### Server actions over API routes
+
+Use Next.js server actions (`'use server'`) for all internal data operations — CRUD, queries, cache invalidation. They live in `services/` and are called directly from client components via React Query mutations or passed as props from server components.
+
+API routes (`app/api/`) are reserved for external entry points: OAuth callbacks, webhooks, and endpoints that third-party systems call. If a browser or React component is the caller, use a server action.
+
+### Vercel Workflows for long-running tasks
+
+Any operation that calls external APIs, does AI generation, or could take more than a few seconds should be a Vercel Workflow (`workflows/`). Each workflow uses `"use workflow"` at the entry point and breaks operations into `"use step"` functions for durability and automatic retries.
+
+- Track progress via a status enum on the database row (e.g., `pending → researching → generating → completed`)
+- Use `FatalError` for non-retryable errors, regular `throw` for retryable ones
+- Persist error messages to the database so failures are visible in the UI
+- Launch workflows concurrently with `Promise.all()` when processing multiple items
+
+### Integration tests over unit tests
+
+We prefer integration tests that exercise real workflows end-to-end. Tests hit actual AI and research APIs — only mock external services that have side effects (like Outreach enrollment). This catches issues that mocks hide, like prompt regressions or API contract changes.
+
+- Tests live in `tests/` and run with Vitest
+- `fileParallelism: false` — tests share a database and run sequentially
+- Long timeouts (60–90s) are expected for tests that make real AI calls
+- Use the `createTracker()` helper for test data cleanup
+- CRUD tests mock `next/cache` and `workflow/api` since they only test database operations
+
+### React Query patterns
+
+All client-side data fetching goes through React Query. Server components fetch initial data and pass it via `initialData` so pages render with no loading spinners.
+
+- Query keys are centralized in `lib/query-keys.ts` — always use them
+- Conditional polling: set `refetchInterval` to 3s when contacts are processing, `false` when idle
+- Mutations invalidate relevant query keys on success
+- Never fetch from `useEffect` — use `useQuery` or `useMutation`
+
+### Database conventions
+
+Drizzle ORM with Neon Postgres. Schema lives in `db/schema.ts`.
+
+- Derive TypeScript types from the schema with `InferSelectModel` and `$inferInsert` — don't duplicate types
+- Use JSONB columns (typed with `$type<T>()`) for complex nested data like research results
+- Foreign keys use `onDelete: 'cascade'` where the child has no meaning without the parent
+- Timestamps always use `withTimezone: true`
+
+### Component patterns
+
+- Default to server components. Add `'use client'` only when the component needs interactivity (forms, mutations, state)
+- UI primitives come from shadcn/ui — don't build custom buttons, inputs, cards, etc.
+- Forms use native `FormData` — no form libraries
+- Show loading states on mutation buttons (`isPending` → disabled + "Loading..." text)
+
+### TypeScript
+
+- Strict mode is on — keep it on
+- Prefer type inference over explicit annotations. Annotate API boundaries, component props, and shared interfaces
+- Validate untrusted data (CSV uploads, API request bodies) with Zod
+- No `any` types — use `unknown` and narrow
+
 ## Stack
 
 - **Next.js 15** with App Router
