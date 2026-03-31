@@ -22,6 +22,9 @@ interface CampaignFormProps {
 export function CampaignForm({ campaign }: CampaignFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [outreachMode, setOutreachMode] = useState<string>(
+    campaign?.outreachMode ?? 'none',
+  );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -37,12 +40,15 @@ export function CampaignForm({ campaign }: CampaignFormProps) {
       numberOfFollowUps: parseInt(
         formData.get('numberOfFollowUps') as string,
       ),
-      outreachSequenceId: formData.get('outreachSequenceId')
-        ? parseInt(formData.get('outreachSequenceId') as string)
-        : null,
-      mailboxId: formData.get('mailboxId')
-        ? parseInt(formData.get('mailboxId') as string)
-        : null,
+      outreachMode: formData.get('outreachMode') as 'none' | 'upsert_only' | 'full',
+      outreachSequenceId:
+        outreachMode === 'full' && formData.get('outreachSequenceId')
+          ? parseInt(formData.get('outreachSequenceId') as string)
+          : null,
+      mailboxId:
+        outreachMode !== 'none' && formData.get('mailboxId')
+          ? parseInt(formData.get('mailboxId') as string)
+          : null,
     };
 
     try {
@@ -142,35 +148,88 @@ export function CampaignForm({ campaign }: CampaignFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Outreach Configuration</CardTitle>
+          <CardTitle>Outreach Integration</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Optional. Leave blank to generate emails without sending via
-            Outreach.
-          </p>
+          <div className="space-y-3">
+            <label className="flex items-start gap-3 cursor-pointer rounded-md border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <input
+                type="radio"
+                name="outreachMode"
+                value="none"
+                checked={outreachMode === 'none'}
+                onChange={() => setOutreachMode('none')}
+                className="mt-0.5 h-4 w-4"
+              />
+              <div>
+                <div className="font-medium text-sm">Keep in Auto Outbound only</div>
+                <p className="text-xs text-muted-foreground">
+                  Emails are generated and stored in the app. Nothing is sent to Outreach.
+                </p>
+              </div>
+            </label>
 
-          <div className="space-y-2">
-            <Label htmlFor="outreachSequenceId">Outreach Sequence ID</Label>
-            <Input
-              id="outreachSequenceId"
-              name="outreachSequenceId"
-              type="number"
-              defaultValue={campaign?.outreachSequenceId || ''}
-              placeholder="Leave blank to skip Outreach enrollment"
-            />
+            <label className="flex items-start gap-3 cursor-pointer rounded-md border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <input
+                type="radio"
+                name="outreachMode"
+                value="upsert_only"
+                checked={outreachMode === 'upsert_only'}
+                onChange={() => setOutreachMode('upsert_only')}
+                className="mt-0.5 h-4 w-4"
+              />
+              <div>
+                <div className="font-medium text-sm">Sync prospects to Outreach</div>
+                <p className="text-xs text-muted-foreground">
+                  Creates or updates the prospect in Outreach with generated emails. SDRs can manually review and send.
+                </p>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer rounded-md border p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+              <input
+                type="radio"
+                name="outreachMode"
+                value="full"
+                checked={outreachMode === 'full'}
+                onChange={() => setOutreachMode('full')}
+                className="mt-0.5 h-4 w-4"
+              />
+              <div>
+                <div className="font-medium text-sm">Sync and enroll in sequence</div>
+                <p className="text-xs text-muted-foreground">
+                  Creates or updates the prospect AND adds them to an Outreach sequence automatically.
+                </p>
+              </div>
+            </label>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="mailboxId">Mailbox ID</Label>
-            <Input
-              id="mailboxId"
-              name="mailboxId"
-              type="number"
-              defaultValue={campaign?.mailboxId || ''}
-              placeholder="Optional Outreach mailbox ID"
-            />
-          </div>
+          {outreachMode === 'full' && (
+            <div className="space-y-2">
+              <Label htmlFor="outreachSequenceId">Outreach Sequence ID</Label>
+              <Input
+                id="outreachSequenceId"
+                name="outreachSequenceId"
+                type="number"
+                required
+                defaultValue={campaign?.outreachSequenceId || ''}
+                placeholder="Sequence ID for enrollment"
+              />
+            </div>
+          )}
+
+          {outreachMode !== 'none' && (
+            <div className="space-y-2">
+              <Label htmlFor="mailboxId">Mailbox ID</Label>
+              <Input
+                id="mailboxId"
+                name="mailboxId"
+                type="number"
+                defaultValue={campaign?.mailboxId || ''}
+                placeholder="Optional Outreach mailbox ID"
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

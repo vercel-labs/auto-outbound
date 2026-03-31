@@ -1,22 +1,36 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { parseCsv, type CsvContact } from '@/lib/csv';
-import { addContacts } from '@/services/contacts';
+import { addAndProcessContacts } from '@/services/contacts';
+import { queryKeys } from '@/lib/query-keys';
 
 interface CsvUploaderProps {
   campaignId: number;
 }
 
 export function CsvUploader({ campaignId }: CsvUploaderProps) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const [parsed, setParsed] = useState<CsvContact[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+
+  const uploadMutation = useMutation({
+    mutationFn: (contacts: CsvContact[]) =>
+      addAndProcessContacts(campaignId, contacts),
+    onSuccess: () => {
+      setParsed(null);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.campaigns.detail(campaignId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.campaigns.contacts(campaignId),
+      });
+    },
+  });
 
   const onDrop = useCallback((files: File[]) => {
     const file = files[0];
@@ -38,17 +52,9 @@ export function CsvUploader({ campaignId }: CsvUploaderProps) {
     maxFiles: 1,
   });
 
-  async function handleUpload() {
+  function handleUpload() {
     if (!parsed || parsed.length === 0) return;
-    setUploading(true);
-
-    try {
-      await addContacts(campaignId, parsed);
-      setParsed(null);
-      router.refresh();
-    } finally {
-      setUploading(false);
-    }
+    uploadMutation.mutate(parsed);
   }
 
   return (
@@ -122,8 +128,10 @@ export function CsvUploader({ campaignId }: CsvUploaderProps) {
               </p>
             )}
           </div>
-          <Button onClick={handleUpload} disabled={uploading}>
-            {uploading ? 'Uploading...' : `Upload ${parsed.length} contacts`}
+          <Button onClick={handleUpload} disabled={uploadMutation.isPending}>
+            {uploadMutation.isPending
+              ? 'Uploading...'
+              : `Upload ${parsed.length} contacts`}
           </Button>
         </div>
       )}

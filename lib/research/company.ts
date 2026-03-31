@@ -1,6 +1,5 @@
 import { getExaClient } from '@/lib/exa';
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import type { CompanyResearch } from '@/db/schema';
 
@@ -50,8 +49,9 @@ export async function researchCompany(
       };
     }
 
-    const { object } = await generateObject({
-      model: openai('gpt-4o-mini'),
+    const { output } = await generateText({
+      model: 'anthropic/claude-haiku-4-5',
+      output: Output.object({ schema: CompanyResearchResultSchema }),
       prompt: `Based on the following research results about ${companyName}, extract:
 1. Any AI features or products they already offer
 2. A brief summary of what the company does
@@ -60,10 +60,9 @@ Research results:
 ${sources.map((s) => `URL: ${s.url}\nSummary: ${s.summary}`).join('\n\n')}
 
 If no AI features are found, return an empty array for existingAIFeatures.`,
-      schema: CompanyResearchResultSchema,
     });
 
-    return object;
+    return output!;
   } catch (error) {
     console.error(`[research] Failed to research ${companyName}:`, error);
     return {

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { OutreachConnect } from '@/components/outreach-connect';
+import { OutreachCustomFields } from '@/components/outreach-custom-fields';
 import {
   getOutreachConnection,
   getOutreachAuthUrl,
@@ -24,6 +25,8 @@ export default async function SettingsPage() {
         expiresAt={connection?.expiresAt}
         authUrl={authUrl}
       />
+
+      <OutreachCustomFields />
     </div>
   );
 }

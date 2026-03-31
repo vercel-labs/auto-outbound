@@ -1,28 +1,11 @@
 'use server';
 
 import { db } from '@/db';
-import {
-  contacts,
-  campaigns,
-  type ContactInsert,
-  type Contact,
-} from '@/db/schema';
+import { contacts, type ContactInsert } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { researchCompany } from '@/lib/research/company';
-import { researchPerson } from '@/lib/research/people';
-import { buildEmailGenerationPrompt } from '@/lib/email/generation';
-import {
-  createEmailGenerationSchema,
-  type EmailGenerationResult,
-} from '@/lib/email/schema';
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
-import {
-  upsertProspect,
-  addProspectToSequence,
-  setProspectCustomFields,
-} from '@/lib/outreach/prospects';
+import { start } from 'workflow/api';
+import { processContactWorkflow } from '@/workflows/process-contact';
 
 export async function getContacts(campaignId: number) {
   return db
@@ -30,6 +13,11 @@ export async function getContacts(campaignId: number) {
     .from(contacts)
     .where(eq(contacts.campaignId, campaignId))
     .orderBy(desc(contacts.createdAt));
+}
+
+export async function clearContacts(campaignId: number) {
+  await db.delete(contacts).where(eq(contacts.campaignId, campaignId));
+  revalidatePath(`/campaigns/${campaignId}`);
 }
 
 export async function addContacts(
@@ -44,168 +32,46 @@ export async function addContacts(
   return result;
 }
 
-async function updateContactStatus(
-  contactId: number,
-  status: Contact['status'],
-  extra?: Partial<ContactInsert>,
+/**
+ * Add contacts and immediately kick off processing workflows for each one.
+ */
+export async function addAndProcessContacts(
+  campaignId: number,
+  contactsData: Omit<ContactInsert, 'campaignId'>[],
 ) {
-  await db
-    .update(contacts)
-    .set({ status, ...extra })
-    .where(eq(contacts.id, contactId));
+  const created = await addContacts(campaignId, contactsData);
+
+  // Start a workflow for each contact — they all run concurrently with retries
+  await Promise.all(
+    created.map((c) => start(processContactWorkflow, [c.id])),
+  );
+
+  return created;
 }
 
-export async function processContact(contactId: number) {
-  const [contact] = await db
-    .select()
-    .from(contacts)
-    .where(eq(contacts.id, contactId))
-    .limit(1);
-
-  if (!contact) throw new Error('Contact not found');
-
-  const [campaign] = await db
-    .select()
-    .from(campaigns)
-    .where(eq(campaigns.id, contact.campaignId))
-    .limit(1);
-
-  if (!campaign) throw new Error('Campaign not found');
-
-  try {
-    // 1. Research phase
-    await updateContactStatus(contactId, 'researching');
-
-    let companyResearch = null;
-    if (campaign.researchEnabled) {
-      companyResearch = await researchCompany(contact.company);
-    }
-
-    let peopleResearch = null;
-    if (campaign.peopleResearchEnabled) {
-      peopleResearch = await researchPerson({
-        contactName: `${contact.firstName} ${contact.lastName || ''}`.trim(),
-        contactEmail: contact.email,
-        accountName: contact.company,
-      });
-    }
-
-    await db
-      .update(contacts)
-      .set({ companyResearch, peopleResearch })
-      .where(eq(contacts.id, contactId));
-
-    // 2. Email generation phase
-    await updateContactStatus(contactId, 'generating');
-
-    const prompt = buildEmailGenerationPrompt({
-      systemPrompt: campaign.systemPrompt,
-      researchEnabled: campaign.researchEnabled,
-      research: companyResearch,
-      contact: {
-        contactName:
-          `${contact.firstName} ${contact.lastName || ''}`.trim(),
-        contactEmail: contact.email,
-        contactTitle: contact.title,
-        accountName: contact.company,
-        notes: contact.notes,
-      },
-      numberOfFollowUps: campaign.numberOfFollowUps,
-      peopleResearchEnabled: campaign.peopleResearchEnabled,
-      peopleResearch: peopleResearch,
-    });
-
-    const schema = createEmailGenerationSchema(campaign.numberOfFollowUps);
-
-    const { object: emailContent } = await generateObject({
-      model: openai('gpt-4o'),
-      prompt,
-      schema,
-    });
-
-    const typedEmail = emailContent as EmailGenerationResult;
-
-    await db
-      .update(contacts)
-      .set({
-        generatedSubject: typedEmail.subject,
-        generatedBody1: typedEmail.body1,
-        generatedBody2: typedEmail.body2 || null,
-        generatedBody3: typedEmail.body3 || null,
-      })
-      .where(eq(contacts.id, contactId));
-
-    // 3. Outreach enrollment phase (if configured)
-    if (campaign.outreachSequenceId) {
-      await updateContactStatus(contactId, 'sending');
-
-      const prospectId = await upsertProspect({
-        email: contact.email,
-        firstName: contact.firstName,
-        lastName: contact.lastName,
-        title: contact.title,
-        company: contact.company,
-      });
-
-      const bodies = [typedEmail.body1];
-      if (typedEmail.body2) bodies.push(typedEmail.body2);
-      if (typedEmail.body3) bodies.push(typedEmail.body3);
-
-      await setProspectCustomFields({
-        prospectId,
-        subject: typedEmail.subject,
-        bodies,
-      });
-
-      await addProspectToSequence({
-        prospectId,
-        sequenceId: campaign.outreachSequenceId,
-        mailboxId: campaign.mailboxId,
-      });
-
-      await db
-        .update(contacts)
-        .set({ outreachProspectId: prospectId })
-        .where(eq(contacts.id, contactId));
-    }
-
-    // 4. Done
-    await updateContactStatus(contactId, 'completed');
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : String(error);
-    await updateContactStatus(contactId, 'failed', {
-      errorMessage: message,
-    });
-    throw error;
-  }
-
-  revalidatePath(`/campaigns/${contact.campaignId}`);
+/**
+ * Start a processing workflow for a single contact.
+ */
+export async function startContactWorkflow(contactId: number) {
+  await start(processContactWorkflow, [contactId]);
 }
 
+/**
+ * Kick off workflows for all pending contacts in a campaign.
+ */
 export async function processAllContacts(campaignId: number) {
-  const pendingContacts = await db
+  const allContacts = await db
     .select()
     .from(contacts)
     .where(eq(contacts.campaignId, campaignId));
 
-  const pending = pendingContacts.filter((c) => c.status === 'pending');
+  const pending = allContacts.filter((c) => c.status === 'pending');
 
-  const results: { id: number; success: boolean; error?: string }[] = [];
-
-  for (const contact of pending) {
-    try {
-      await processContact(contact.id);
-      results.push({ id: contact.id, success: true });
-    } catch (error) {
-      results.push({
-        id: contact.id,
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+  // Start all workflows concurrently — each contact processes independently
+  await Promise.all(
+    pending.map((c) => start(processContactWorkflow, [c.id])),
+  );
 
   revalidatePath(`/campaigns/${campaignId}`);
-  return results;
+  return { started: pending.length };
 }

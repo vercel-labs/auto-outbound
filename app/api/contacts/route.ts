@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { contacts, campaigns } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { start } from 'workflow/api';
+import { processContactWorkflow } from '@/workflows/process-contact';
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,6 +54,9 @@ export async function POST(request: NextRequest) {
         notes: context || null,
       })
       .returning();
+
+    // Kick off the processing workflow immediately
+    await start(processContactWorkflow, [created.id]);
 
     return NextResponse.json({ contact: created }, { status: 201 });
   } catch (error) {

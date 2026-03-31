@@ -21,6 +21,12 @@ export const campaignStatus = pgEnum('campaign_status', [
   'archived',
 ]);
 
+export const outreachMode = pgEnum('outreach_mode', [
+  'none',
+  'upsert_only',
+  'full',
+]);
+
 export const contactStatus = pgEnum('contact_status', [
   'pending',
   'researching',
@@ -60,6 +66,7 @@ export const campaigns = pgTable('campaigns', {
     .default(false)
     .notNull(),
   numberOfFollowUps: integer('number_of_follow_ups').default(2).notNull(),
+  outreachMode: outreachMode('outreach_mode').default('none').notNull(),
   outreachSequenceId: integer('outreach_sequence_id'),
   mailboxId: integer('mailbox_id'),
   createdAt: timestamp('created_at', { withTimezone: true })
@@ -98,6 +105,7 @@ export const contacts = pgTable('contacts', {
   generatedBody3: text('generated_body_3'),
   outreachProspectId: integer('outreach_prospect_id'),
   errorMessage: text('error_message'),
+  data: jsonb('data').$type<Record<string, unknown>>(),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

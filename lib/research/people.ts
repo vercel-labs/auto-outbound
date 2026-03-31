@@ -1,6 +1,5 @@
 import { getExaClient } from '@/lib/exa';
-import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import type { PeopleResearch } from '@/db/schema';
 
@@ -67,8 +66,9 @@ export async function researchPerson({
 
     const emailContext = contactEmail ? ` (email: ${contactEmail})` : '';
 
-    const { object } = await generateObject({
-      model: openai('gpt-4o-mini'),
+    const { output } = await generateText({
+      model: 'anthropic/claude-haiku-4-5',
+      output: Output.object({ schema: PeopleResearchResultSchema }),
       prompt: `You are verifying whether search results match a specific person: ${contactName} who works at ${accountName}${emailContext}.
 
 Set isConfidentMatch=true ONLY if you find clear evidence this is the same person (company and name must match). If results seem to be about a different person with a similar name, set isConfidentMatch=false.
@@ -80,17 +80,16 @@ Extract the following from the search results:
 
 Search results:
 ${sources.map((s) => `URL: ${s.url}\nSummary: ${s.summary}`).join('\n\n')}`,
-      schema: PeopleResearchResultSchema,
     });
 
-    if (!object.isConfidentMatch || !object.matchedCompany) {
+    if (!output?.isConfidentMatch || !output.matchedCompany) {
       return null;
     }
 
     return {
-      title: object.title,
-      contactSummary: object.contactSummary,
-      recentActivity: object.recentActivity,
+      title: output.title,
+      contactSummary: output.contactSummary,
+      recentActivity: output.recentActivity,
     };
   } catch (error) {
     console.error(`[people-research] Failed for ${contactName}:`, error);
