@@ -7,8 +7,8 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Auto Outbound',
-  description: 'AI-powered outbound email generation with research context',
+  title: 'Email Agent',
+  description: 'AI-powered email generation with research context',
 };
 
 export default function RootLayout({
@@ -30,7 +30,7 @@ export default function RootLayout({
               <nav className="w-56 border-r bg-card p-4 flex flex-col gap-1">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <Link href="/campaigns" className="text-lg font-semibold">
-                    Auto Outbound
+                    Email Agent
                   </Link>
                   <ThemeToggle />
                 </div>

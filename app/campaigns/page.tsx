@@ -34,7 +34,7 @@ export default async function CampaignsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Campaigns</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Create and manage outbound email campaigns
+            Create and manage email campaigns
           </p>
         </div>
         <Link href="/campaigns/new">

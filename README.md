@@ -1,4 +1,4 @@
-# Auto Outbound
+# Email Agent
 
 AI-powered outbound email generation with Exa research context and Outreach integration. One-click deploy to Vercel.
 
@@ -31,7 +31,7 @@ Deploy to Vercel first, then complete the steps below.
   - `OUTREACH_CLIENT_ID` — from your Outreach OAuth app
   - `OUTREACH_CLIENT_SECRET` — from your Outreach OAuth app
   - `OUTREACH_REDIRECT_URI` — set to `https://<your-domain>/api/oauth/outreach/callback`
-  - Navigate to our `/settings` page in Auto Outbound and connect Outreach via OAuth
+  - Navigate to our `/settings` page in Email Agent and connect Outreach via OAuth
 
 ## Setting Up Your First AI Outbound Campaign
 
@@ -54,7 +54,7 @@ Fill in the campaign details:
 
   | Mode | What happens | Outreach required? |
   |---|---|---|
-  | **Keep in Auto Outbound only** (`none`) | Emails are generated and stored in the app. Nothing is sent to Outreach. | No |
+  | **Keep in Email Agent only** (`none`) | Emails are generated and stored in the app. Nothing is sent to Outreach. | No |
   | **Sync prospects to Outreach** (`upsert_only`) | Creates or updates the prospect in Outreach and writes the generated emails to custom fields on the prospect record. SDRs can review and send manually. | Yes |
   | **Sync and enroll in sequence** (`full`) | Everything in "Sync prospects" plus automatic enrollment in an Outreach sequence. Requires an Outreach Sequence ID. | Yes |
 
@@ -116,7 +116,7 @@ The required fields are `email`, `firstName`, and `companyName`. Optional fields
 
 ### Step 4: Process Contacts
 
-Once your contacts are loaded, click the **Process N pending contacts** button. For each contact, Auto Outbound will:
+Once your contacts are loaded, click the **Process N pending contacts** button. For each contact, Email Agent will:
 
 1. Research their company (and optionally the person) via Exa
 2. Generate a personalized email sequence using your system prompt and the research context
@@ -130,7 +130,7 @@ You can monitor progress in the contacts table — each contact moves through `p
 
 ### Architecture Overview
 
-Auto Outbound is a Next.js 15 App Router application that combines server-rendered pages with client-side interactivity via React Query. Data is persisted in Neon Postgres through Drizzle ORM, and long-running contact processing runs as durable Vercel Workflows.
+Email Agent is a Next.js 15 App Router application that combines server-rendered pages with client-side interactivity via React Query. Data is persisted in Neon Postgres through Drizzle ORM, and long-running contact processing runs as durable Vercel Workflows.
 
 ### Request Flow
 

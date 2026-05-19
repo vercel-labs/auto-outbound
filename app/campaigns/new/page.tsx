@@ -6,7 +6,7 @@ export default function NewCampaignPage() {
       <div>
         <h1 className="text-2xl font-semibold">New Campaign</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Configure your outbound email campaign
+          Configure your email campaign
         </p>
       </div>
       <CampaignForm />

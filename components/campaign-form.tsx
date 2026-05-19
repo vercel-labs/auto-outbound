@@ -78,7 +78,7 @@ export function CampaignForm({ campaign }: CampaignFormProps) {
               name="name"
               required
               defaultValue={campaign?.name}
-              placeholder="Q1 Outbound - Enterprise"
+              placeholder="Q1 Email Agent - Enterprise"
             />
           </div>
 
@@ -162,7 +162,7 @@ export function CampaignForm({ campaign }: CampaignFormProps) {
                 className="mt-0.5 h-4 w-4"
               />
               <div>
-                <div className="font-medium text-sm">Keep in Auto Outbound only</div>
+                <div className="font-medium text-sm">Keep in Email Agent only</div>
                 <p className="text-xs text-muted-foreground">
                   Emails are generated and stored in the app. Nothing is sent to Outreach.
                 </p>
